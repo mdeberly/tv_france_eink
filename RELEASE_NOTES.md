@@ -12,6 +12,8 @@ Les deux applications peuvent être installées côte à côte.
 - Fonctionne hors connexion avec les dernières données téléchargées
 - Menu ⋮ : actualiser, à propos, lien vers la dernière version
 
+Nouveautés 1.0.4 : au retour d'une fiche (bouton retour d'Android ou « ‹ Retour »), la liste reste à l'endroit où on l'avait laissée.
+
 Nouveautés 1.0.3 : signature fixe. Désinstaller une fois la version précédente, ensuite les mises à jour s'installeront par-dessus.
 
 Nouveautés 1.0.2 : résumés en plus gros caractères sur l'accueil de la version E Ink (3 chaînes par page).

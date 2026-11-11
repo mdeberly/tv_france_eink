@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -97,7 +98,14 @@ fun App(
     var datePicker by rememberSaveable { mutableStateOf(false) }
     var menu by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val selectDate: (LocalDate) -> Unit = { onSelectDate(it); page = 0 }
+    // Position dans la liste (version couleur), gardée pendant la consultation d'une fiche.
+    val listState = rememberLazyListState()
+    // Nouvelle soirée : on revient au début de la liste.
+    val selectDate: (LocalDate) -> Unit = {
+        onSelectDate(it)
+        page = 0
+        scope.launch { listState.scrollToItem(0) }
+    }
 
     val entry = openChannel?.let { id -> state.entries.firstOrNull { it.channel.id == id } }
     when {
@@ -130,6 +138,7 @@ fun App(
                 onSelectDate = selectDate,
                 onOpenDatePicker = { datePicker = true },
                 onOpenMenu = { menu = true },
+                listState = listState,
             )
         }
     }

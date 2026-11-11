@@ -16,12 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,6 +64,7 @@ fun ListScreen(
     onSelectDate: (LocalDate) -> Unit,
     onOpenDatePicker: () -> Unit,
     onOpenMenu: () -> Unit,
+    listState: LazyListState = rememberLazyListState(),
 ) {
     Column(Modifier.fillMaxSize().background(Ink.White)) {
         Header(state, onSelectDate, onOpenDatePicker, onOpenMenu)
@@ -76,7 +77,7 @@ fun ListScreen(
                     "Programme indisponible" + (state.error?.let { " ($it)" } ?: "") +
                         ".\n\nVérifiez la connexion puis touchez « ⋮ » › Actualiser."
                 )
-                COLOR -> SmoothList(state, onOpen)
+                COLOR -> SmoothList(state, listState, onOpen)
                 else -> PagedList(state, page, onPageChange, onPageCount, onOpen)
             }
         }
@@ -255,10 +256,7 @@ private fun Pager(current: Int, pages: Int, onPageChange: (Int) -> Unit) {
 
 /** Variante couleur : liste en cartes, défilement fluide. */
 @Composable
-private fun SmoothList(state: UiState, onOpen: (PrimeTimeEntry) -> Unit) {
-    val listState = rememberLazyListState()
-    // Nouvelle soirée : on revient en haut de la liste.
-    LaunchedEffect(state.selected) { listState.scrollToItem(0) }
+private fun SmoothList(state: UiState, listState: LazyListState, onOpen: (PrimeTimeEntry) -> Unit) {
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),

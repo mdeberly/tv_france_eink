@@ -13,8 +13,8 @@ android {
         applicationId = "fr.papertv.eink"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 5
+        versionName = "1.0.4"
     }
 
     // Deux variantes à partir du même code (comme Paper Meteo) :
