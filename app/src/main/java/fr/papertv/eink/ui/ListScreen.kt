@@ -43,8 +43,8 @@ import kotlin.math.abs
 private val DAY = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)
 private val DAY_SHORT = DateTimeFormatter.ofPattern("EEEE d", Locale.FRANCE)
 
-/** Nombre de chaînes par écran, selon la hauteur disponible (3 à 5). */
-fun perPageFor(heightDp: Float): Int = (heightDp / 150f).toInt().coerceIn(3, 5)
+/** Version E Ink : 3 chaînes par écran, pour un résumé en gros caractères. */
+const val PER_PAGE = 3
 
 /** Libellé court de la soirée : « Ce soir », « Hier soir », « Demain soir » ou le jour. */
 fun eveningLabel(date: LocalDate, today: LocalDate): String = when (date) {
@@ -139,7 +139,7 @@ private fun PagedList(
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val pagerHeight = 59.dp
         val listHeight = maxHeight - pagerHeight
-        val perPage = perPageFor(listHeight.value)
+        val perPage = PER_PAGE
         val pages = ((state.entries.size + perPage - 1) / perPage).coerceAtLeast(1)
         val current = page.coerceIn(0, pages - 1)
         SideEffect { onPageCount(pages) }
@@ -199,14 +199,17 @@ private fun EinkRow(entry: PrimeTimeEntry, modifier: Modifier) {
             BoxWithConstraints(Modifier.weight(1f).fillMaxSize()) {
                 // Le résumé occupe toute la hauteur restante, coupé proprement à la ligne.
                 val titleLines = if (p.title.length > 28) 2 else 1
-                val used = 20f * titleLines + 18f + 6f
-                val summaryLines = ((maxHeight.value - used) / 18f).toInt().coerceAtLeast(1)
+                val used = 20f * titleLines + 18f + 4f
+                val summaryLines = ((maxHeight.value - used) / SUMMARY_LINE).toInt().coerceAtLeast(1)
                 ProgrammeSummary(entry, summaryLines)
             }
         }
         Rule()
     }
 }
+
+/** Hauteur de ligne du résumé (dp/sp), en gros caractères pour l'E Ink. */
+private const val SUMMARY_LINE = 21f
 
 @Composable
 private fun ProgrammeSummary(entry: PrimeTimeEntry, summaryLines: Int) {
@@ -227,7 +230,7 @@ private fun ProgrammeSummary(entry: PrimeTimeEntry, summaryLines: Int) {
             Spacer(Modifier.height(4.dp))
             Text(
                 summary,
-                style = TextStyle(fontSize = 14.sp, lineHeight = 18.sp, color = Ink.Black),
+                style = TextStyle(fontSize = 16.sp, lineHeight = SUMMARY_LINE.sp, color = Ink.Black),
                 maxLines = summaryLines, overflow = TextOverflow.Ellipsis,
             )
         }

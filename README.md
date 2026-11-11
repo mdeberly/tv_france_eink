@@ -6,7 +6,7 @@ de **Canal+** et de **TV5MONDE**. Elle est pensée pour les écrans e-ink, en pa
 
 ## Fonctionnement
 
-- **Accueil** : la soirée du jour, chaîne par chaîne (3 à 5 chaînes par écran selon la hauteur).
+- **Accueil** : la soirée du jour, chaîne par chaîne (version E Ink : 3 chaînes par écran, résumé en gros caractères).
   Chaque ligne affiche une vignette, le titre, le résumé, puis l'heure de début et de fin en petit.
 - **Défilement page par page**, sans animation : boutons « ‹ Préc. » / « Suiv. › », balayage
   (gauche ou haut = page suivante) ou touches de volume.
