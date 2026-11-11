@@ -39,7 +39,7 @@ class NavigationTest {
     fun backReturnsToSamePosition() {
         compose.setContent { EinkTheme { App(state, onSelectDate = {}, onRefresh = {}) } }
         if (COLOR) {
-            repeat(4) { compose.onRoot().performTouchInput { swipeUp() } }
+            repeat(4) { compose.onRoot().performTouchInput { swipeUp(startY = centerY + 120f, endY = top + 60f) } }
         } else {
             repeat(3) { compose.onNodeWithText("Suiv. ›").performClick() }
         }

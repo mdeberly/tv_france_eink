@@ -41,6 +41,7 @@ import java.util.Locale
 import kotlin.math.abs
 
 private val DAY = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)
+private val DAY_ABBR = DateTimeFormatter.ofPattern("EEE d MMM", Locale.FRANCE)
 private val DAY_SHORT = DateTimeFormatter.ofPattern("EEEE d", Locale.FRANCE)
 
 /** Version E Ink : 3 chaînes par écran, pour un résumé en gros caractères. */
@@ -65,9 +66,13 @@ fun ListScreen(
     onOpenDatePicker: () -> Unit,
     onOpenMenu: () -> Unit,
     listState: LazyListState = rememberLazyListState(),
+    onOpenNetflix: () -> Unit = {},
 ) {
+    val pages = ((state.entries.size + PER_PAGE - 1) / PER_PAGE).coerceAtLeast(1)
+    val current = page.coerceIn(0, pages - 1)
+    SideEffect { onPageCount(pages) }
     Column(Modifier.fillMaxSize().background(Ink.White)) {
-        Header(state, onSelectDate, onOpenDatePicker, onOpenMenu)
+        Header(state, if (COLOR || state.entries.isEmpty()) null else "${current + 1}/$pages", onSelectDate, onOpenDatePicker, onOpenMenu)
         Rule(3.dp)
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
@@ -78,8 +83,29 @@ fun ListScreen(
                         ".\n\nVérifiez la connexion puis touchez « ⋮ » › Actualiser."
                 )
                 COLOR -> SmoothList(state, listState, onOpen)
-                else -> PagedList(state, page, onPageChange, onPageCount, onOpen)
+                else -> PagedList(state, current, pages, onPageChange, onOpen)
             }
+        }
+        Rule(if (COLOR) 1.dp else 3.dp)
+        BottomBar(current, pages, paged = !COLOR && state.entries.isNotEmpty(), onPageChange, onOpenNetflix)
+    }
+}
+
+/** Barre du bas : le bouton Netflix, encadré en E Ink par les boutons de page. */
+@Composable
+private fun BottomBar(current: Int, pages: Int, paged: Boolean, onPageChange: (Int) -> Unit, onOpenNetflix: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().height(if (COLOR) 64.dp else 56.dp).padding(horizontal = if (COLOR) 12.dp else 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (paged) {
+            EinkButton("‹ Préc.", Modifier.width(88.dp), enabled = current > 0) { onPageChange(current - 1) }
+            Spacer(Modifier.width(8.dp))
+        }
+        EinkButton(if (COLOR) "Netflix : films et séries ›" else "Netflix", Modifier.weight(1f), filled = true, onClick = onOpenNetflix)
+        if (paged) {
+            Spacer(Modifier.width(8.dp))
+            EinkButton("Suiv. ›", Modifier.width(88.dp), enabled = current < pages - 1) { onPageChange(current + 1) }
         }
     }
 }
@@ -87,6 +113,7 @@ fun ListScreen(
 @Composable
 private fun Header(
     state: UiState,
+    pageLabel: String?,
     onSelectDate: (LocalDate) -> Unit,
     onOpenDatePicker: () -> Unit,
     onOpenMenu: () -> Unit,
@@ -107,12 +134,13 @@ private fun Header(
                 style = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.Black, color = Ink.Black),
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
-            val sub = DAY.format(state.selected).replaceFirstChar { it.uppercase() } +
+            // Avec le numéro de page (E Ink), la date est abrégée pour tenir sur une ligne.
+            val sub = (if (pageLabel != null) DAY_ABBR else DAY).format(state.selected).replaceFirstChar { it.uppercase() } +
                 when {
                     state.loading -> " · mise à jour…"
                     state.error != null -> " · hors ligne"
                     else -> ""
-                }
+                } + (pageLabel?.let { " · p. $it" } ?: "")
             Text(sub, style = TextStyle(fontSize = 12.sp, color = Ink.Dark), maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         EinkButton("›", Modifier.width(44.dp), enabled = index in 0 until dates.size - 1) { onSelectDate(dates[index + 1]) }
@@ -128,56 +156,44 @@ private fun Message(text: String) {
     }
 }
 
-/** Variante E Ink : un nombre fixe de chaînes par écran, on tourne les pages. */
+/** Variante E Ink : 3 chaînes par écran, on tourne les pages (boutons, balayage, touches de volume). */
 @Composable
 private fun PagedList(
     state: UiState,
-    page: Int,
+    current: Int,
+    pages: Int,
     onPageChange: (Int) -> Unit,
-    onPageCount: (Int) -> Unit,
     onOpen: (PrimeTimeEntry) -> Unit,
 ) {
+    val swipe = with(LocalDensity.current) { 50.dp.toPx() }
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val pagerHeight = 59.dp
-        val listHeight = maxHeight - pagerHeight
-        val perPage = PER_PAGE
-        val pages = ((state.entries.size + perPage - 1) / perPage).coerceAtLeast(1)
-        val current = page.coerceIn(0, pages - 1)
-        SideEffect { onPageCount(pages) }
-        val swipe = with(LocalDensity.current) { 50.dp.toPx() }
-
-        Column(Modifier.fillMaxSize()) {
-            Column(
-                Modifier
-                    .height(listHeight)
-                    .fillMaxWidth()
-                    .pointerInput(current, pages) {
-                        var dx = 0f
-                        var dy = 0f
-                        detectDragGestures(
-                            onDragStart = { dx = 0f; dy = 0f },
-                            onDragEnd = {
-                                // Glisser vers la gauche ou vers le haut : page suivante.
-                                val d = if (abs(dx) > abs(dy)) dx else dy
-                                if (abs(d) > swipe) {
-                                    val target = if (d < 0) current + 1 else current - 1
-                                    if (target in 0 until pages) onPageChange(target)
-                                }
-                            },
-                        ) { change, amount ->
-                            change.consume()
-                            dx += amount.x
-                            dy += amount.y
-                        }
-                    },
-            ) {
-                val rowHeight = listHeight / perPage
-                state.entries.drop(current * perPage).take(perPage).forEach { entry ->
-                    EinkRow(entry, Modifier.height(rowHeight).fillMaxWidth().einkClickable { onOpen(entry) })
-                }
+        val rowHeight = maxHeight / PER_PAGE
+        Column(
+            Modifier
+                .fillMaxSize()
+                .pointerInput(current, pages) {
+                    var dx = 0f
+                    var dy = 0f
+                    detectDragGestures(
+                        onDragStart = { dx = 0f; dy = 0f },
+                        onDragEnd = {
+                            // Glisser vers la gauche ou vers le haut : page suivante.
+                            val d = if (abs(dx) > abs(dy)) dx else dy
+                            if (abs(d) > swipe) {
+                                val target = if (d < 0) current + 1 else current - 1
+                                if (target in 0 until pages) onPageChange(target)
+                            }
+                        },
+                    ) { change, amount ->
+                        change.consume()
+                        dx += amount.x
+                        dy += amount.y
+                    }
+                },
+        ) {
+            state.entries.drop(current * PER_PAGE).take(PER_PAGE).forEach { entry ->
+                EinkRow(entry, Modifier.height(rowHeight).fillMaxWidth().einkClickable { onOpen(entry) })
             }
-            Rule(3.dp)
-            Pager(current, pages, onPageChange)
         }
     }
 }
@@ -235,22 +251,6 @@ private fun ProgrammeSummary(entry: PrimeTimeEntry, summaryLines: Int) {
                 maxLines = summaryLines, overflow = TextOverflow.Ellipsis,
             )
         }
-    }
-}
-
-@Composable
-private fun Pager(current: Int, pages: Int, onPageChange: (Int) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        EinkButton("‹ Préc.", Modifier.width(100.dp), enabled = current > 0) { onPageChange(current - 1) }
-        Text(
-            "${current + 1} / $pages",
-            Modifier.weight(1f),
-            style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, color = Ink.Black),
-        )
-        EinkButton("Suiv. ›", Modifier.width(100.dp), enabled = current < pages - 1) { onPageChange(current + 1) }
     }
 }
 

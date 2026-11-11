@@ -92,7 +92,7 @@ fun AboutScreen(state: UiState, onRefresh: () -> Unit, onClose: () -> Unit) {
                 Section("Sources")
                 Text(
                     "Programmes TV : XML TV Fr (xmltvfr.fr), d'après les guides des chaînes. " +
-                        "Images : © chaînes et diffuseurs.",
+                        "Images : © chaînes et diffuseurs.\n\nNetflix : " + TMDB_ATTRIBUTION,
                     style = small,
                 )
             }

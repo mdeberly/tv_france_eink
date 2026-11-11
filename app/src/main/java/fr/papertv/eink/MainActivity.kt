@@ -23,7 +23,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fr.papertv.eink.data.ImageLoader
+import fr.papertv.eink.data.StreamKind
+import fr.papertv.eink.data.StreamSort
+import fr.papertv.eink.data.StreamTitle
 import fr.papertv.eink.ui.AboutScreen
+import fr.papertv.eink.ui.NetflixScreen
+import fr.papertv.eink.ui.NetflixState
+import fr.papertv.eink.ui.NetflixViewModel
+import fr.papertv.eink.ui.StreamDetailScreen
 import fr.papertv.eink.ui.DatePickerScreen
 import fr.papertv.eink.ui.DetailScreen
 import fr.papertv.eink.ui.EinkTheme
@@ -38,6 +45,7 @@ import androidx.compose.foundation.background
 
 class MainActivity : ComponentActivity() {
     private val viewModel: TvViewModel by viewModels()
+    private val netflixViewModel: NetflixViewModel by viewModels()
 
     /** Action des touches physiques (volume / page) : +1 page suivante, -1 page précédente. */
     private var onPageKey: ((Int) -> Unit)? = null
@@ -48,12 +56,24 @@ class MainActivity : ComponentActivity() {
         setContent {
             EinkTheme {
                 val state by viewModel.state.collectAsStateWithLifecycle()
+                val netflix by netflixViewModel.state.collectAsStateWithLifecycle()
+                val actions = remember {
+                    NetflixActions(
+                        open = netflixViewModel::open,
+                        select = { k, s -> netflixViewModel.select(k, s) },
+                        refresh = netflixViewModel::refresh,
+                        saveToken = netflixViewModel::saveToken,
+                        loadDetails = netflixViewModel::loadDetails,
+                    )
+                }
                 Box(Modifier.fillMaxSize().background(Ink.White).safeDrawingPadding()) {
                     App(
                         state = state,
                         onSelectDate = viewModel::select,
                         onRefresh = { viewModel.refresh(force = true) },
                         registerPageKeys = { onPageKey = it },
+                        netflix = netflix,
+                        netflixActions = actions,
                     )
                 }
             }
@@ -83,6 +103,15 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/** Actions de la rubrique Netflix (reliées au NetflixViewModel). */
+data class NetflixActions(
+    val open: () -> Unit = {},
+    val select: (StreamKind, StreamSort) -> Unit = { _, _ -> },
+    val refresh: () -> Unit = {},
+    val saveToken: (String) -> Unit = {},
+    val loadDetails: (StreamTitle) -> Unit = {},
+)
+
 @Composable
 fun App(
     state: UiState,
@@ -91,12 +120,20 @@ fun App(
     registerPageKeys: (((Int) -> Unit)?) -> Unit = {},
     initialChannel: String? = null,
     initialPage: Int = 0,
+    netflix: NetflixState = NetflixState(),
+    netflixActions: NetflixActions = NetflixActions(),
 ) {
     var page by rememberSaveable { mutableIntStateOf(initialPage) }
     var pageCount by remember { mutableIntStateOf(1) }
     var openChannel by rememberSaveable { mutableStateOf(initialChannel) }
     var datePicker by rememberSaveable { mutableStateOf(false) }
     var menu by rememberSaveable { mutableStateOf(false) }
+    // Rubrique Netflix : ouverte ou non, page (E Ink), position (couleur), titre consulté.
+    var netflixOpen by rememberSaveable { mutableStateOf(false) }
+    var netflixPage by rememberSaveable { mutableIntStateOf(0) }
+    var netflixPageCount by remember { mutableIntStateOf(1) }
+    var netflixTitle by rememberSaveable { mutableStateOf<Long?>(null) }
+    val netflixList = rememberLazyListState()
     val scope = rememberCoroutineScope()
     // Position dans la liste (version couleur), gardée pendant la consultation d'une fiche.
     val listState = rememberLazyListState()
@@ -108,7 +145,38 @@ fun App(
     }
 
     val entry = openChannel?.let { id -> state.entries.firstOrNull { it.channel.id == id } }
+    val title = netflixTitle?.let { id -> netflix.items.firstOrNull { it.id == id } }
     when {
+        netflixOpen && title != null -> {
+            BackHandler { netflixTitle = null }
+            val scroll = rememberScrollState()
+            SideEffect { registerPageKeys { d -> scope.launch { scroll.pageBy(d) } } }
+            StreamDetailScreen(
+                title, netflix.details[title.id], scroll,
+                onLoadDetails = { netflixActions.loadDetails(title) },
+                onBack = { netflixTitle = null },
+            )
+        }
+        netflixOpen -> {
+            BackHandler { netflixOpen = false }
+            SideEffect { registerPageKeys { d -> netflixPage = (netflixPage + d).coerceIn(0, netflixPageCount - 1) } }
+            NetflixScreen(
+                state = netflix,
+                page = netflixPage,
+                onPageChange = { netflixPage = it },
+                onPageCount = { netflixPageCount = it },
+                listState = netflixList,
+                onSelect = { k, s ->
+                    netflixActions.select(k, s)
+                    netflixPage = 0
+                    scope.launch { netflixList.scrollToItem(0) }
+                },
+                onOpen = { netflixTitle = it.id },
+                onRefresh = netflixActions.refresh,
+                onSaveToken = netflixActions.saveToken,
+                onBack = { netflixOpen = false },
+            )
+        }
         menu -> {
             BackHandler { menu = false }
             SideEffect { registerPageKeys(null) }
@@ -139,6 +207,10 @@ fun App(
                 onOpenDatePicker = { datePicker = true },
                 onOpenMenu = { menu = true },
                 listState = listState,
+                onOpenNetflix = {
+                    netflixOpen = true
+                    netflixActions.open()
+                },
             )
         }
     }

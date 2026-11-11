@@ -8,7 +8,14 @@ import fr.papertv.eink.data.Channels
 import fr.papertv.eink.data.ImageLoader
 import fr.papertv.eink.data.Programme
 import fr.papertv.eink.data.XmltvParser
+import androidx.compose.foundation.lazy.LazyListState
+import fr.papertv.eink.data.StreamKind
+import fr.papertv.eink.data.StreamSort
+import fr.papertv.eink.data.TmdbRepository
 import fr.papertv.eink.ui.AboutScreen
+import fr.papertv.eink.ui.NetflixScreen
+import fr.papertv.eink.ui.NetflixState
+import fr.papertv.eink.ui.StreamDetailScreen
 import fr.papertv.eink.ui.DatePickerScreen
 import fr.papertv.eink.ui.COLOR
 import fr.papertv.eink.ui.DetailScreen
@@ -104,6 +111,60 @@ class ScreenshotTest {
         runBlocking { scroll.scrollTo(scroll.maxValue) }
         compose.waitForIdle()
         compose.onRoot().captureRoboImage("$out/5_detail_ensuite.png")
+    }
+
+    /** Rubrique Netflix : données TMDB réelles si une clé est fournie (papertv.tmdb ou TMDB_TOKEN). */
+    private fun netflix(kind: StreamKind, sort: StreamSort): NetflixState {
+        val token = System.getProperty("papertv.tmdb") ?: System.getenv("TMDB_TOKEN")
+        assumeTrue("Clé TMDB absente", !token.isNullOrBlank())
+        val repo = TmdbRepository(File(System.getProperty("java.io.tmpdir"), "tmdb-" + System.nanoTime()).apply { mkdirs() }) { token }
+        val items = runBlocking { repo.list(kind, sort, force = true).first }
+        runBlocking {
+            items.take(4).forEach { t ->
+                listOfNotNull(t.posterUrl, t.backdropUrl).forEach { url ->
+                    if (ImageLoader.load(url, 600) == null) {
+                        System.getProperty("papertv.placeholder")?.let { ImageLoader.load(it, 600) }?.let { ImageLoader.put(url, it) }
+                    }
+                }
+            }
+        }
+        val details = runBlocking { items.take(1).associate { it.id to repo.details(it) } }
+            .filterValues { it != null }.mapValues { it.value!! }
+        return NetflixState(kind = kind, sort = sort, items = items, hasToken = true, details = details)
+    }
+
+    @Test
+    fun netflixMovies() {
+        val n = netflix(StreamKind.MOVIES, StreamSort.POPULAR)
+        compose.setContent {
+            EinkTheme { NetflixScreen(n, 0, {}, {}, LazyListState(), { _, _ -> }, {}, {}, {}, {}) }
+        }
+        compose.onRoot().captureRoboImage("$out/8_netflix_films.png")
+    }
+
+    @Test
+    fun netflixSeriesTop() {
+        val n = netflix(StreamKind.SERIES, StreamSort.TOP_RATED)
+        compose.setContent {
+            EinkTheme { NetflixScreen(n, 0, {}, {}, LazyListState(), { _, _ -> }, {}, {}, {}, {}) }
+        }
+        compose.onRoot().captureRoboImage("$out/9_netflix_series_mieux_notees.png")
+    }
+
+    @Test
+    fun netflixDetail() {
+        val n = netflix(StreamKind.MOVIES, StreamSort.POPULAR)
+        val t = n.items.first()
+        compose.setContent { EinkTheme { StreamDetailScreen(t, n.details[t.id], onBack = {}) } }
+        compose.onRoot().captureRoboImage("$out/10_netflix_fiche.png")
+    }
+
+    @Test
+    fun netflixToken() {
+        compose.setContent {
+            EinkTheme { NetflixScreen(NetflixState(hasToken = false), 0, {}, {}, LazyListState(), { _, _ -> }, {}, {}, {}, {}) }
+        }
+        compose.onRoot().captureRoboImage("$out/11_netflix_cle.png")
     }
 
     @Test

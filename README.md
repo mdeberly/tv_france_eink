@@ -18,6 +18,11 @@ de **Canal+** et de **TV5MONDE**. Elle est pensée pour les écrans e-ink, en pa
 - Interface noir et blanc, gros contrastes, images en niveaux de gris, pas d'effets d'onde ni de
   rebond : on limite au maximum les rafraîchissements de l'écran e-ink.
 
+- **Netflix** (bouton en bas de l'accueil) : films et séries disponibles sur Netflix en France,
+  « Populaires » ou « Mieux notés », avec affiche, résumé, genres et la **moyenne des notes des
+  spectateurs avec le nombre de votants** (TMDB). Fiche détaillée : durée ou saisons, réalisation,
+  distribution.
+
 ## Données
 
 Les programmes viennent des fichiers XMLTV publics de [XML TV Fr](https://xmltvfr.fr) :
@@ -26,6 +31,11 @@ Les programmes viennent des fichiers XMLTV publics de [XML TV Fr](https://xmltvf
 |---|---|---|---|
 | `xmltv_tnt.zip` | ~0,8 Mo | chaînes TNT + Canal+ | toutes les 12 h |
 | `xmltv_fr.zip` | ~9 Mo | TV5MONDE seulement | tous les 3 jours |
+
+Rubrique Netflix : [TMDB](https://www.themoviedb.org) (disponibilités fournies par JustWatch),
+rafraîchie toutes les 24 h. Il faut une clé TMDB gratuite : soit saisie dans l'application au
+premier usage, soit intégrée à l'APK via le secret GitHub `TMDB_TOKEN`. Ce produit utilise l'API
+TMDB mais n'est ni approuvé ni certifié par TMDB.
 
 Seules les chaînes utiles sont conservées, dans un cache local : l'application fonctionne hors
 connexion avec les dernières données téléchargées. Le bouton ↻ force la mise à jour.

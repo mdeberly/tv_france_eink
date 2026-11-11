@@ -20,6 +20,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Clé TMDB (rubrique Netflix), facultative : intégrée à l'APK si le secret existe,
+      # sinon elle se saisit dans l'application au premier usage.
+      TMDB_TOKEN: ${{ secrets.TMDB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 

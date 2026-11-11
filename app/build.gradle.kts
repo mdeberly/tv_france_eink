@@ -13,8 +13,11 @@ android {
         applicationId = "fr.papertv.eink"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.0.4"
+        versionCode = 6
+        versionName = "1.1"
+        // Clé TMDB intégrée à la compilation (secret GitHub TMDB_TOKEN), facultative :
+        // sinon elle se saisit dans l'application.
+        buildConfigField("String", "TMDB_TOKEN", "\"" + (System.getenv("TMDB_TOKEN") ?: "") + "\"")
     }
 
     // Deux variantes à partir du même code (comme Paper Meteo) :
@@ -98,7 +101,7 @@ dependencies {
 
 // Fichiers XMLTV réels pour les captures d'écran (facultatif).
 tasks.withType<Test>().configureEach {
-    listOf("papertv.tnt", "papertv.fr", "papertv.today", "papertv.placeholder").forEach { key ->
+    listOf("papertv.tnt", "papertv.fr", "papertv.today", "papertv.placeholder", "papertv.tmdb").forEach { key ->
         project.findProperty(key)?.let { systemProperty(key, it.toString()) }
     }
     maxHeapSize = "3g"
