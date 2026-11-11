@@ -46,12 +46,8 @@ Télécharger l'APK de la dernière [release](../../releases) sur le téléphone
 ./gradlew :app:assembleRelease
 ```
 
-Signature : la clé n'est pas versionnée. En local, placer un keystore dans `keystore/release.jks`
-(alias et mots de passe `papertv` par défaut, surchargeables par `PAPERTV_KEY_ALIAS`,
-`PAPERTV_STORE_PASSWORD`, `PAPERTV_KEY_PASSWORD`). Sur GitHub Actions, ajouter le secret
-`PAPERTV_KEYSTORE_B64` (keystore encodé en base64) et, si besoin, les mots de passe en secrets.
-Sans clé, l'APK est signé avec une clé de debug, qui change d'une build CI à l'autre : il faut alors
-désinstaller l'ancienne version avant d'installer la nouvelle.
+Signature : comme pour Paper Meteo, la clé est versionnée (`app/papertv.keystore`, alias et mots
+de passe `papertv`) pour que chaque nouvelle version s'installe par-dessus la précédente.
 
 Captures d'écran (Robolectric + Roborazzi, au format du Kompakt) :
 

@@ -30,17 +30,6 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      # Clé de signature fixe (secret PAPERTV_KEYSTORE_B64 = keystore en base64) : les mises à
-      # jour s'installent par-dessus. Sans ce secret, l'APK est signé avec une clé de debug.
-      - name: Clé de signature
-        env:
-          KEYSTORE_B64: ${{ secrets.PAPERTV_KEYSTORE_B64 }}
-        run: |
-          if [ -n "$KEYSTORE_B64" ]; then
-            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
-            echo "PAPERTV_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
-          fi
-
       - name: Tests unitaires
         run: chmod +x gradlew && ./gradlew :app:testEinkDebugUnitTest --tests "fr.papertv.eink.XmltvTest"
 

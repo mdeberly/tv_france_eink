@@ -13,8 +13,8 @@ android {
         applicationId = "fr.papertv.eink"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
     }
 
     // Deux variantes à partir du même code (comme Paper Meteo) :
@@ -35,18 +35,14 @@ android {
         }
     }
 
-    // Clé de signature hors dépôt : fichier désigné par PAPERTV_KEYSTORE (en CI, issu du secret
-    // PAPERTV_KEYSTORE_B64), ou keystore/release.jks en local. À défaut : clé de debug.
-    val keystoreFile = (System.getenv("PAPERTV_KEYSTORE")?.let(::file) ?: rootProject.file("keystore/release.jks"))
-        .takeIf { it.exists() }
+    // Clé de signature fixe, versionnée comme dans Paper Meteo : chaque nouvelle version
+    // s'installe par-dessus l'ancienne. PAPERTV_KEYSTORE permet d'en utiliser une autre.
     signingConfigs {
-        if (keystoreFile != null) {
-            create("release") {
-                storeFile = keystoreFile
-                storePassword = System.getenv("PAPERTV_STORE_PASSWORD") ?: "papertv"
-                keyAlias = System.getenv("PAPERTV_KEY_ALIAS") ?: "papertv"
-                keyPassword = System.getenv("PAPERTV_KEY_PASSWORD") ?: "papertv"
-            }
+        create("release") {
+            storeFile = System.getenv("PAPERTV_KEYSTORE")?.let(::file) ?: file("papertv.keystore")
+            storePassword = System.getenv("PAPERTV_STORE_PASSWORD") ?: "papertv"
+            keyAlias = System.getenv("PAPERTV_KEY_ALIAS") ?: "papertv"
+            keyPassword = System.getenv("PAPERTV_KEY_PASSWORD") ?: "papertv"
         }
     }
 
@@ -55,7 +51,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
