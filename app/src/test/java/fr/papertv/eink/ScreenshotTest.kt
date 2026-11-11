@@ -64,7 +64,13 @@ class ScreenshotTest {
         // Précharge les vignettes pour que la capture soit complète.
         runBlocking {
             state.entries.forEach { e ->
-                e.primeTime?.iconUrl?.let { ImageLoader.load(it, 300) }
+                e.primeTime?.iconUrl?.let { url ->
+                    // Hors réseau, une image de remplacement (papertv.placeholder) permet de vérifier la mise en page.
+                    if (ImageLoader.load(url, 600) == null) {
+                        System.getProperty("papertv.placeholder")?.let { ImageLoader.load(it, 600) }
+                            ?.let { ImageLoader.put(url, it) }
+                    }
+                }
             }
         }
     }

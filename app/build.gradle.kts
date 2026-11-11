@@ -13,8 +13,8 @@ android {
         applicationId = "fr.papertv.eink"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.1"
     }
 
     // Deux variantes à partir du même code (comme Paper Meteo) :
@@ -102,7 +102,7 @@ dependencies {
 
 // Fichiers XMLTV réels pour les captures d'écran (facultatif).
 tasks.withType<Test>().configureEach {
-    listOf("papertv.tnt", "papertv.fr", "papertv.today").forEach { key ->
+    listOf("papertv.tnt", "papertv.fr", "papertv.today", "papertv.placeholder").forEach { key ->
         project.findProperty(key)?.let { systemProperty(key, it.toString()) }
     }
     maxHeapSize = "3g"

@@ -17,7 +17,10 @@ import java.security.MessageDigest
  * taille utile : l'écran e-ink n'affiche de toute façon que des niveaux de gris.
  */
 object ImageLoader {
-    private val memory = object : LruCache<String, Bitmap>(12 * 1024 * 1024) {
+    // 1/8 de la mémoire de l'application (au moins 16 Mo) : de quoi garder toutes les vignettes d'une soirée.
+    private val memory = object : LruCache<String, Bitmap>(
+        (Runtime.getRuntime().maxMemory() / 8).coerceIn(16L shl 20, 256L shl 20).toInt()
+    ) {
         override fun sizeOf(key: String, value: Bitmap) = value.byteCount
     }
     private val limiter = Semaphore(4)
@@ -49,13 +52,23 @@ object ImageLoader {
         }
     }
 
+    /** Décode en réduisant l'image pour que son plus grand côté ne dépasse pas [maxPx]. */
     fun decode(bytes: ByteArray, maxPx: Int): Bitmap? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
         var sample = 1
-        while (bounds.outWidth / (sample * 2) >= maxPx && bounds.outHeight / (sample * 2) >= maxPx) sample *= 2
+        while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxPx) sample *= 2
         val opts = BitmapFactory.Options().apply { inSampleSize = sample }
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+        val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts) ?: return null
+        val longest = maxOf(decoded.width, decoded.height)
+        if (longest <= maxPx) return decoded
+        val scale = maxPx.toFloat() / longest
+        val scaled = Bitmap.createScaledBitmap(
+            decoded, (decoded.width * scale).toInt().coerceAtLeast(1), (decoded.height * scale).toInt().coerceAtLeast(1), true,
+        )
+        if (scaled !== decoded) decoded.recycle()
+        return scaled
     }
 
     private fun fetch(url: String): ByteArray? {
