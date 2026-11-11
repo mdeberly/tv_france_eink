@@ -28,8 +28,6 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - uses: android-actions/setup-android@v3
-
       - uses: gradle/actions/setup-gradle@v4
 
       # Clé de signature fixe (secret PAPERTV_KEYSTORE_B64 = keystore en base64) : les mises à
@@ -44,13 +42,14 @@ jobs:
           fi
 
       - name: Tests unitaires
-        run: ./gradlew :app:testEinkDebugUnitTest --tests "fr.papertv.eink.XmltvTest"
+        run: chmod +x gradlew && ./gradlew :app:testEinkDebugUnitTest --tests "fr.papertv.eink.XmltvTest"
 
       - name: APK release
         run: ./gradlew :app:assembleRelease
 
       - name: Captures d'écran
         if: ${{ inputs.screenshots }}
+        continue-on-error: true
         run: |
           mkdir -p /tmp/xmltv && cd /tmp/xmltv
           curl -sSfL -o tnt.zip https://xmltvfr.fr/xmltv/xmltv_tnt.zip && unzip -o -q tnt.zip
