@@ -49,12 +49,25 @@ class ScreenshotTest {
     @get:Rule val compose = createComposeRule()
 
     private lateinit var state: UiState
-    private val out get() = "build/screenshots/" + if (COLOR) "color" else "eink"
+    private val out get() = "build/screenshots/" + (if (COLOR) "color" else "eink") +
+        (System.getProperty("papertv.device")?.takeIf { it in DEVICES }?.let { "-$it" } ?: "")
+
+    companion object {
+        /**
+         * Formats d'écran supplémentaires. Bigme HiBreak S (noir et blanc) : 5,84", 1440×720 px,
+         * 276 ppi, densité xhdpi supposée → 360×720 dp, moins la barre d'état.
+         */
+        val DEVICES = mapOf("hibreak-s" to "w360dp-h696dp-port-xhdpi")
+    }
 
     @Before
     fun setUp() {
-        // Version couleur : capture au format d'un téléphone récent (Pixel, 1080×2400).
-        if (COLOR) RuntimeEnvironment.setQualifiers("w411dp-h914dp-port-xxhdpi")
+        // Autre appareil (papertv.device), sinon : Kompakt en E Ink, téléphone récent (Pixel) en couleur.
+        val device = DEVICES[System.getProperty("papertv.device")]
+        when {
+            device != null -> RuntimeEnvironment.setQualifiers(device)
+            COLOR -> RuntimeEnvironment.setQualifiers("w411dp-h914dp-port-xxhdpi")
+        }
         val tnt = System.getProperty("papertv.tnt")?.let(::File)
         assumeTrue("Fichier XMLTV absent", tnt != null && tnt.exists())
         val today = LocalDate.parse(System.getProperty("papertv.today") ?: LocalDate.now().toString())

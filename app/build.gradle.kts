@@ -101,7 +101,7 @@ dependencies {
 
 // Fichiers XMLTV réels pour les captures d'écran (facultatif).
 tasks.withType<Test>().configureEach {
-    listOf("papertv.tnt", "papertv.fr", "papertv.today", "papertv.placeholder", "papertv.tmdb").forEach { key ->
+    listOf("papertv.tnt", "papertv.fr", "papertv.today", "papertv.placeholder", "papertv.tmdb", "papertv.device").forEach { key ->
         project.findProperty(key)?.let { systemProperty(key, it.toString()) }
     }
     maxHeapSize = "3g"

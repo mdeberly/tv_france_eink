@@ -9,6 +9,10 @@ on:
         description: "Générer les captures d'écran (docs/screenshots)"
         type: boolean
         default: false
+      device:
+        description: "Format d'écran des captures (vide = Kompakt / téléphone ; hibreak-s)"
+        type: string
+        default: ""
       release:
         description: "Publier une release GitHub avec l'APK"
         type: boolean
@@ -51,8 +55,9 @@ jobs:
           ./gradlew :app:testEinkDebugUnitTest :app:testColorDebugUnitTest --tests 'fr.papertv.eink.ScreenshotTest' \
             -Proborazzi.test.record=true \
             -Ppapertv.tnt=/tmp/xmltv/xmltv_tnt.xml -Ppapertv.fr=/tmp/xmltv/xmltv_fr.xml \
-            -Ppapertv.today=$(TZ=Europe/Paris date +%F)
-          rm -rf docs/screenshots && mkdir -p docs && cp -r app/build/screenshots docs/screenshots
+            -Ppapertv.today=$(TZ=Europe/Paris date +%F) -Ppapertv.device="${{ inputs.device }}"
+          for d in app/build/screenshots/*; do rm -rf "docs/screenshots/$(basename "$d")"; done
+          mkdir -p docs/screenshots && cp -r app/build/screenshots/* docs/screenshots/
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/screenshots
