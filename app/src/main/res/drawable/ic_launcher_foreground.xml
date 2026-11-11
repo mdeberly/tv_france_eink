@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Téléviseur noir sur fond blanc, lisible sur écran e-ink. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#000000"
+        android:pathData="M30,36h48a4,4 0,0 1,4 4v28a4,4 0,0 1,-4 4h-48a4,4 0,0 1,-4 -4v-28a4,4 0,0 1,4 -4zM32,42v24h44v-24z" />
+    <path android:fillColor="#000000" android:pathData="M44,76h20v4h-20z" />
+    <path android:fillColor="#000000" android:pathData="M45,30l9,6 9,-6 1.5,2 -10.5,7 -10.5,-7z" />
+    <path android:fillColor="#000000" android:pathData="M47,49l14,5 -14,5z" />
+</vector>

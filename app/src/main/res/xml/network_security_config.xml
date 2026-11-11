@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Les vignettes des programmes sont servies en HTTP par ce CDN. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">static-cdn.tv.sfr.net</domain>
+    </domain-config>
+</network-security-config>

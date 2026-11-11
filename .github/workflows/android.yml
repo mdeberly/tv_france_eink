@@ -1,0 +1,104 @@
+name: Android
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+    inputs:
+      screenshots:
+        description: "Générer les captures d'écran (docs/screenshots)"
+        type: boolean
+        default: false
+      release:
+        description: "Publier une release GitHub avec l'APK"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Clé de signature fixe (secret PAPERTV_KEYSTORE_B64 = keystore en base64) : les mises à
+      # jour s'installent par-dessus. Sans ce secret, l'APK est signé avec une clé de debug.
+      - name: Clé de signature
+        env:
+          KEYSTORE_B64: ${{ secrets.PAPERTV_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "PAPERTV_KEYSTORE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          fi
+
+      - name: Tests unitaires
+        run: ./gradlew :app:testEinkDebugUnitTest --tests "fr.papertv.eink.XmltvTest"
+
+      - name: APK release
+        run: ./gradlew :app:assembleRelease
+
+      - name: Captures d'écran
+        if: ${{ inputs.screenshots }}
+        run: |
+          mkdir -p /tmp/xmltv && cd /tmp/xmltv
+          curl -sSfL -o tnt.zip https://xmltvfr.fr/xmltv/xmltv_tnt.zip && unzip -o -q tnt.zip
+          curl -sSfL -o fr.zip https://xmltvfr.fr/xmltv/xmltv_fr.zip && unzip -o -q fr.zip
+          cd "$GITHUB_WORKSPACE"
+          ./gradlew :app:testEinkDebugUnitTest :app:testColorDebugUnitTest --tests 'fr.papertv.eink.ScreenshotTest' \
+            -Proborazzi.test.record=true \
+            -Ppapertv.tnt=/tmp/xmltv/xmltv_tnt.xml -Ppapertv.fr=/tmp/xmltv/xmltv_fr.xml \
+            -Ppapertv.today=$(TZ=Europe/Paris date +%F)
+          rm -rf docs/screenshots && mkdir -p docs && cp -r app/build/screenshots docs/screenshots
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots
+          git commit -m "Mise à jour des captures d'écran" || echo "Pas de changement"
+          git push
+
+      - name: APK
+        id: apk
+        run: |
+          VERSION=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          cp app/build/outputs/apk/eink/release/app-eink-release.apk PaperTV-EInk.apk
+          cp app/build/outputs/apk/color/release/app-color-release.apk PaperTV-Color.apk
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          for f in PaperTV-EInk.apk PaperTV-Color.apk; do
+            "$BT/apksigner" verify --print-certs "$f" | grep -E "SHA-256" || true
+            "$BT/aapt2" dump badging "$f" | grep -E "^package"
+          done
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PaperTV-EInk
+          path: PaperTV-EInk.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PaperTV-Color
+          path: PaperTV-Color.apk
+
+      - name: Release GitHub
+        if: ${{ inputs.release }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.apk.outputs.version }}
+          name: Paper TV v${{ steps.apk.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          body_path: RELEASE_NOTES.md
+          make_latest: true
+          files: |
+            PaperTV-EInk.apk
+            PaperTV-Color.apk

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tv>
+  <channel id="M6.fr"><display-name>M6</display-name></channel>
+  <programme start="20261111204000 +0100" stop="20261111211000 +0100" channel="M6.fr">
+    <title lang="fr">Scènes de ménages</title>
+    <category lang="fr">Série humoristique</category>
+  </programme>
+  <programme start="20261111211000 +0100" stop="20261111221000 +0100" channel="M6.fr">
+    <title lang="fr">La France a un incroyable talent</title>
+    <sub-title lang="fr">Les auditions</sub-title>
+    <desc lang="fr">Le concours revient.</desc>
+    <credits><presenter>Karine Le Marchand</presenter><actor role="x">A</actor></credits>
+    <category lang="fr">Divertissement</category>
+    <icon src="http://static-cdn.tv.sfr.net/img.jpg" />
+    <episode-num system="xmltv_ns">1.4.</episode-num>
+    <rating system="CSA"><value>Tout public</value></rating>
+    <star-rating system="allocine"><value>3/5</value></star-rating>
+  </programme>
+  <programme start="20261111221000 +0100" stop="20261111221500 +0100" channel="M6.fr">
+    <title lang="fr">Météo</title>
+  </programme>
+  <programme start="20261111221500 +0100" stop="20261111231500 +0100" channel="M6.fr">
+    <title lang="fr">La France a un incroyable talent, ça continue</title>
+  </programme>
+  <programme start="20261111200000 +0100" stop="20261111220000 +0100" channel="Other.fr">
+    <title lang="fr">Ignored</title>
+  </programme>
+  <programme start="20261111203500 +0100" stop="20261111225000 +0100" channel="TF1.fr">
+    <title lang="fr">Football</title>
+  </programme>
+  <programme start="20261111225000 +0100" stop="20261111232500 +0100" channel="TF1.fr">
+    <title lang="fr">Après match</title>
+  </programme>
+</tv>
